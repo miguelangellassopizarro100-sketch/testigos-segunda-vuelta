@@ -1,0 +1,2264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Testigos Electorales - Segunda Vuelta Colombia</title>
+    <!-- Tailwind CSS para Estilos Modernos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para Iconografía de Calidad -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js para Análisis Visual de Datos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS (XLSX) para procesar Archivos Excel de forma local -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- jsPDF y AutoTable para exportar reportes en PDF con fotos incluidas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+        .colombia-accent {
+            background: linear-gradient(90deg, #FCD116 0%, #003893 50%, #CE1126 100%);
+            height: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Contenedor de Login -->
+    <div id="loginContainer" class="min-h-screen flex items-center justify-center gradient-bg relative overflow-hidden z-50">
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="absolute -top-40 -right-40 w-80 h-80 bg-amber-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+            <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" style="animation-delay: 2s"></div>
+            <div class="absolute top-40 left-40 w-80 h-80 bg-rose-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" style="animation-delay: 4s"></div>
+        </div>
+        <div class="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl shadow-2xl max-w-md w-full mx-4 relative z-10">
+            <div class="text-center mb-8">
+                <div class="bg-amber-500 text-slate-950 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/20">
+                    <i class="fa-solid fa-users-viewfinder text-3xl"></i>
+                </div>
+                <h2 class="text-2xl font-extrabold text-white tracking-tight">E-Testigo Colombia</h2>
+                <p class="text-slate-300 text-sm mt-1">Ingresa para continuar</p>
+            </div>
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-5">
+                <div>
+                    <label class="block text-slate-300 text-xs font-bold mb-1.5 ml-1">Usuario</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-user text-slate-400"></i>
+                        </div>
+                        <input type="text" id="loginUser" required class="w-full bg-slate-900/50 border border-slate-700 text-white text-sm rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 block pl-10 p-3 outline-none transition placeholder-slate-500" placeholder="admin o testigo">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-slate-300 text-xs font-bold mb-1.5 ml-1">Contraseña / Cédula</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-lock text-slate-400"></i>
+                        </div>
+                        <input type="password" id="loginPass" required class="w-full bg-slate-900/50 border border-slate-700 text-white text-sm rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 block pl-10 p-3 outline-none transition placeholder-slate-500" placeholder="Contraseña o número de cédula">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-900 font-bold py-3 px-4 rounded-xl shadow-lg transform transition hover:-translate-y-0.5 mt-2">
+                    Ingresar al Sistema
+                </button>
+            </form>
+            <div id="loginError" class="hidden mt-4 text-center text-rose-400 text-xs font-bold bg-rose-900/30 py-2 rounded-lg border border-rose-500/30">
+                Credenciales incorrectas
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenedor de la Aplicación (Oculto inicialmente) -->
+    <div id="appContainer" class="hidden flex-col min-h-screen w-full">
+
+    <script>
+        let currentRole = null;
+        let currentUserIdentifier = null;
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const user = document.getElementById('loginUser').value.trim().toLowerCase();
+            const pass = document.getElementById('loginPass').value.trim();
+            const errorDiv = document.getElementById('loginError');
+            // Sonido de tigre rugiendo (URL segura de Wikipedia)
+            const tigerAudio = new Audio('https://upload.wikimedia.org/wikipedia/commons/e/e0/Tiger_roar.ogg');
+            
+            if (user === 'admin' && pass === 'admin') {
+                currentRole = 'admin';
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('appContainer').classList.remove('hidden');
+                document.getElementById('appContainer').classList.add('flex');
+                
+                // Ensure admin-only are visible
+                document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+                
+                tigerAudio.play().catch(err => console.log('Audio autoplay prevented:', err));
+            } else if (user === 'testigo' && pass !== '') {
+                // Validar que la cédula exista en la base de datos sincronizada
+                const results = typeof window.getWitnessesData === 'function' ? window.getWitnessesData() : [];
+                
+                if (results.length === 0) {
+                    errorDiv.innerHTML = 'Sincronizando con la base de datos... Por favor intenta en 3 segundos.';
+                    errorDiv.classList.remove('hidden');
+                    setTimeout(() => { errorDiv.classList.add('hidden'); errorDiv.innerHTML = 'Credenciales incorrectas'; }, 4000);
+                    return;
+                }
+
+                // Limpiar espacios o puntos de la cédula para comparación segura
+                const cleanPass = pass.replace(/\D/g, '');
+                const witnessExists = results.some(w => String(w.cedula).replace(/\D/g, '') === cleanPass);
+                
+                if (!witnessExists) {
+                    errorDiv.innerHTML = 'La cédula ingresada no se encuentra registrada en la base de datos activa.';
+                    errorDiv.classList.remove('hidden');
+                    setTimeout(() => { errorDiv.classList.add('hidden'); errorDiv.innerHTML = 'Credenciales incorrectas'; }, 4000);
+                    return;
+                }
+
+                currentRole = 'testigo';
+                currentUserIdentifier = pass; // This acts as their cedula
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('appContainer').classList.remove('hidden');
+                document.getElementById('appContainer').classList.add('flex');
+                
+                // Hide admin-only elements
+                document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+                
+                tigerAudio.play().catch(err => console.log('Audio autoplay prevented:', err));
+
+                // Filter table by this cedula continuously
+                const setFilter = () => {
+                    const searchInput = document.getElementById('searchQuery');
+                    if(searchInput) {
+                        if (searchInput.value !== currentUserIdentifier) {
+                            searchInput.value = currentUserIdentifier;
+                            if (typeof window.applyFilters === 'function') {
+                                window.applyFilters();
+                            }
+                        }
+                    }
+                };
+                
+                setInterval(setFilter, 1000);
+            } else {
+                errorDiv.innerHTML = 'Credenciales incorrectas';
+                errorDiv.classList.remove('hidden');
+                setTimeout(() => errorDiv.classList.add('hidden'), 3000);
+            }
+        }
+
+        function logout() {
+            currentRole = null;
+            currentUserIdentifier = null;
+            document.getElementById('loginUser').value = '';
+            document.getElementById('loginPass').value = '';
+            document.getElementById('appContainer').classList.remove('flex');
+            document.getElementById('appContainer').classList.add('hidden');
+            document.getElementById('loginContainer').style.display = 'flex';
+        }
+    </script>
+
+
+    <!-- Input oculto reutilizable para adjuntar la foto de cualquier testigo -->
+    <input type="file" id="photoFileInput" accept="image/*" class="hidden" multiple onchange="handlePhotoFileSelected(event)">
+
+    <header class="gradient-bg text-white shadow-xl relative overflow-hidden">
+        <div class="colombia-accent w-full absolute top-0 left-0"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+                <div class="bg-amber-500 text-slate-950 p-3 rounded-2xl shadow-lg shadow-amber-500/20">
+                    <i class="fa-solid fa-users-viewfinder text-2xl"></i>
+                </div>
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-widest text-amber-400">Segunda Vuelta Presidencial</span>
+                    <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">E-Testigo Colombia</h1>
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Indicador de Sincronización en la Nube -->
+                <div id="cloudSyncIndicator" class="bg-slate-800 border border-slate-700 px-3.5 py-2 rounded-full text-xs font-semibold flex items-center gap-2 text-slate-300">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500" id="syncDot"></span>
+                    </span>
+                    <span id="syncText">Conectando...</span>
+                </div>
+                <!-- Botón de Configuración de la Nube Propia -->
+                <button onclick="openCloudConfigModal()" class="bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 transition px-3.5 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 admin-only">
+                    <i class="fa-solid fa-cloud-gear"></i> Configurar Nube
+                </button>
+                <button onclick="openHelpModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 transition px-3.5 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5">
+                    <i class="fa-regular fa-circle-question"></i> Guía
+                </button>
+                <button onclick="logout()" class="bg-rose-600 hover:bg-rose-700 text-white transition px-3.5 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 ml-2">
+                    <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Banner de Alerta e Inicio del Asistente de Diagnósticos -->
+    <div id="connectionErrorBanner" class="hidden bg-rose-50 border-b border-rose-100 py-3.5 px-4">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm text-rose-900">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-triangle-exclamation text-rose-600 shrink-0 text-lg animate-bounce"></i>
+                <div>
+                    <p><strong>Error de Conexión en tu Firebase:</strong> No se pudo establecer la sincronización segura en tiempo real.</p>
+                    <p class="text-xs text-rose-700 font-medium" id="connectionErrorShortMsg">Cargando motivo detallado...</p>
+                </div>
+            </div>
+            <button onclick="openDiagnosticModal()" class="text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl transition shrink-0 shadow-sm flex items-center gap-1.5">
+                <i class="fa-solid fa-screwdriver-wrench"></i> Resolver Problema
+            </button>
+        </div>
+    </div>
+
+    <!-- Banner Informativo de Conexión o Advertencia Local -->
+    <div id="localWarningBanner" class="hidden bg-amber-50 border-b border-amber-100 py-3 px-4">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm text-amber-900">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-triangle-exclamation text-amber-600 shrink-0 text-base animate-pulse"></i>
+                <p><strong>Modo Local Temporal:</strong> No estás conectado a tu base de datos de Firebase. Haz clic en <strong>Configurar Nube</strong> para ingresar tus credenciales.</p>
+            </div>
+            <button onclick="openCloudConfigModal()" class="text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-1.5 rounded-lg transition shrink-0">
+                Conectar Base de Datos
+            </button>
+        </div>
+    </div>
+
+    <!-- Banner Informativo Principal -->
+    <div class="bg-blue-50 border-b border-blue-100 py-3 px-4">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm text-blue-800">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-users text-blue-600 shrink-0 text-base animate-pulse"></i>
+                <p><strong>Base de Datos Compartida (Multiusuario):</strong> Todos los computadores con tu Firebase ven y editan la misma información en tiempo real.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-mono font-bold" id="userIdDisplay">Cargando ID...</span>
+            </div>
+        </div>
+    </div>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+        
+        <!-- Bloque Inicial de Carga y Modos -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 admin-only">
+            
+            <!-- Panel Izquierdo: Configuración e Importación -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 lg:col-span-1 flex flex-col justify-between gap-6">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-file-excel text-emerald-600"></i> 1. Importar Testigos
+                    </h2>
+                    
+                    <p class="text-xs text-slate-500 mb-4 leading-relaxed">
+                        Sube tu archivo de Excel o CSV con tus testigos. El sistema extraerá de forma exacta e inmediata sus nombres, cédulas, puestos y mesas reales sin alterarlos.
+                    </p>
+
+                    <!-- Zona de arrastre de archivo -->
+                    <div id="dropzoneWitnesses" class="border-2 border-dashed border-slate-200 hover:border-blue-400 rounded-xl p-5 text-center cursor-pointer transition bg-slate-50 hover:bg-blue-50/20 group relative mb-4">
+                        <input type="file" id="fileWitnesses" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".xlsx, .xls, .csv">
+                        <i class="fa-solid fa-cloud-arrow-up text-2xl text-slate-400 group-hover:text-blue-500 mb-1 transition"></i>
+                        <p class="text-xs font-semibold text-slate-700" id="txtFileWitnesses">Seleccionar o arrastrar Excel</p>
+                        <p class="text-[10px] text-slate-400 mt-1">Soporta: cédula, nombre, puesto, mesa, departamento, municipio</p>
+                    </div>
+
+                    <!-- Indicador de detección de ubicaciones en el Excel cargado -->
+                    <div id="embeddedLocationBadge" class="hidden bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-xl p-3 mb-4 flex items-center gap-2.5 animate-fade-in">
+                        <i class="fa-solid fa-location-dot text-emerald-600 text-lg animate-pulse"></i>
+                        <div>
+                            <p class="text-xs font-bold">¡Puestos de Votación Detectados!</p>
+                            <p class="text-[10px]">Utilizaremos las ubicaciones reales extraídas directamente de tu Excel.</p>
+                        </div>
+                    </div>
+
+                    <div id="witnessInfoCard" class="hidden bg-emerald-50 border border-emerald-100 rounded-xl p-3 mb-4 flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
+                            <div>
+                                <p class="text-xs font-bold text-emerald-900" id="witnessLoadedTitle">Archivo Activo</p>
+                                <p class="text-[10px] text-emerald-700" id="witnessLoadedCount">0 registros</p>
+                            </div>
+                        </div>
+                        <button onclick="confirmResetAllData()" class="text-rose-600 hover:text-rose-800 text-sm p-1" title="Eliminar lista de testigos de la nube">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+
+                    <h2 class="text-md font-bold text-slate-900 mb-3 mt-4 flex items-center gap-2 border-t border-slate-100 pt-4">
+                        <i class="fa-solid fa-database text-blue-600"></i> 2. Fuente de Asignación
+                    </h2>
+                    
+                    <!-- Selector de Modos de Datos -->
+                    <div class="space-y-3">
+                        <label class="block cursor-pointer">
+                            <input type="radio" name="dataSourceMode" value="excel" checked class="sr-only peer" onchange="toggleDataSourceMode('excel')">
+                            <div class="p-3 bg-white border border-slate-200 peer-checked:border-blue-500 peer-checked:bg-blue-50/50 rounded-xl transition hover:border-slate-300">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-xs font-bold text-slate-800">Datos de tu Excel Cargado</span>
+                                    <span class="bg-blue-100 text-blue-800 text-[9px] font-bold px-2 py-0.5 rounded-full">Recomendado</span>
+                                </div>
+                                <p class="text-[10px] text-slate-500 leading-relaxed">
+                                    Usa la información de puesto, mesa y municipio que ya viene dentro de tu archivo Excel.
+                                </p>
+                            </div>
+                        </label>
+
+                        <label class="block cursor-pointer">
+                            <input type="radio" name="dataSourceMode" value="simulation" class="sr-only peer" onchange="toggleDataSourceMode('simulation')">
+                            <div class="p-3 bg-white border border-slate-200 peer-checked:border-indigo-500 peer-checked:bg-indigo-50/20 rounded-xl transition hover:border-slate-300">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-xs font-bold text-slate-800">Simulador de Registraduría</span>
+                                    <span class="bg-indigo-100 text-indigo-800 text-[9px] font-bold px-2 py-0.5 rounded-full">Automático</span>
+                                </div>
+                                <p class="text-[10px] text-slate-500 leading-relaxed">
+                                    Asigna ubicaciones de manera ficticia pero estable y realista si tus testigos no tienen puestos asignados.
+                                </p>
+                            </div>
+                        </label>
+
+                        <label class="block cursor-pointer">
+                            <input type="radio" name="dataSourceMode" value="census" class="sr-only peer" onchange="toggleDataSourceMode('census')">
+                            <div class="p-3 bg-white border border-slate-200 peer-checked:border-emerald-500 peer-checked:bg-emerald-50/30 rounded-xl transition hover:border-slate-300">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-xs font-bold text-slate-800">Cruzar con Censo Real</span>
+                                    <span class="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded-full">Archivo Externo</span>
+                                </div>
+                                <p class="text-[10px] text-slate-500 leading-relaxed">
+                                    Cruza los testigos con un archivo de censo de Registraduría externo que subas a continuación.
+                                </p>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Input para Cargar Censo (Oculto por defecto) -->
+                    <div id="censusUploadContainer" class="hidden mt-3 pt-3 border-t border-slate-100">
+                        <div id="dropzoneCensus" class="border-2 border-dashed border-slate-200 hover:border-emerald-400 rounded-xl p-3 text-center cursor-pointer transition bg-slate-50 hover:bg-emerald-50/20 group relative">
+                            <input type="file" id="fileCensus" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".xlsx, .xls, .csv">
+                            <p class="text-xs font-semibold text-slate-700" id="txtFileCensus">Subir Censo (Excel/CSV)</p>
+                            <p class="text-[9px] text-slate-400">Columnas: "cedula", "puesto", "mesa"</p>
+                        </div>
+
+                        <div id="censusInfoCard" class="hidden bg-emerald-50 border border-emerald-100 rounded-xl p-2.5 mt-2 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-database text-emerald-600"></i>
+                                <span class="text-[10px] font-bold text-emerald-900" id="censusLoadedCount">0 registros</span>
+                            </div>
+                            <button onclick="resetCensusFile()" class="text-emerald-800 hover:text-rose-600 text-xs">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Configuración de Fecha de Control -->
+                <div class="border-t border-slate-100 pt-4 bg-slate-50 p-3.5 rounded-xl">
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                        <i class="fa-regular fa-calendar-check text-indigo-600"></i> Fecha de Control de Asistencia:
+                    </label>
+                    <input type="date" id="controlDateInput" class="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-semibold outline-none focus:border-indigo-500">
+                    <p class="text-[10px] text-slate-400 mt-1">El día en el que estás validando la asistencia.</p>
+                </div>
+
+                <div class="pt-2">
+                    <button onclick="processData()" class="w-full bg-slate-950 hover:bg-slate-800 text-white font-bold py-3.5 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-sm">
+                        <i class="fa-solid fa-rotate"></i> Consultar Mesas / Actualizar
+                    </button>
+                    <button id="demoBtn" onclick="loadDemoData()" class="w-full mt-2 text-slate-500 hover:text-slate-800 text-[11px] font-semibold underline decoration-dotted">
+                        Cargar listado de demostración (Demo)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Panel Derecho: Estadísticas Rápidas y Gráficas de Cobertura -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 lg:col-span-2 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-indigo-600"></i> Dashboard de Control de Asistencia
+                        </h2>
+                        <span class="text-xs text-slate-500 font-medium" id="txtLastUpdate">Sin conexión</span>
+                    </div>
+
+                    <!-- Tarjetas de Métricas -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Testigos</p>
+                            <p class="text-xl font-black text-slate-800" id="metricTotalWitnesses">0</p>
+                        </div>
+                        <div class="bg-emerald-50/60 p-3.5 rounded-xl border border-emerald-100/50">
+                            <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-1">Asistieron (SÍ)</p>
+                            <p class="text-xl font-black text-emerald-800" id="metricAttended">0</p>
+                        </div>
+                        <div class="bg-rose-50/60 p-3.5 rounded-xl border border-rose-100/50">
+                            <p class="text-[10px] font-bold text-rose-600 uppercase tracking-wider mb-1">No Asistieron (NO)</p>
+                            <p class="text-xl font-black text-rose-800" id="metricAbsent">0</p>
+                        </div>
+                        <div class="bg-amber-50/50 p-3.5 rounded-xl border border-amber-100/40">
+                            <p class="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-1">Pendientes (PND)</p>
+                            <p class="text-xl font-black text-amber-800" id="metricPending">0</p>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col items-center justify-center min-h-[200px]">
+                            <p class="text-xs font-bold text-slate-600 mb-2 w-full text-left">Asistencia General de Testigos</p>
+                            <div class="relative w-full h-[160px] flex items-center justify-center">
+                                <canvas id="chartAttendance"></canvas>
+                                <div id="chartAttendancePlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
+                                    <i class="fa-solid fa-chart-pie text-xl mb-1"></i>
+                                    <span class="text-xs">Sin datos registrados</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col items-center justify-center min-h-[200px]">
+                            <p class="text-xs font-bold text-slate-600 mb-2 w-full text-left">Distribución por Departamento</p>
+                            <div class="relative w-full h-[160px] flex items-center justify-center">
+                                <canvas id="chartDepts"></canvas>
+                                <div id="chartDeptsPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
+                                    <i class="fa-solid fa-chart-bar text-xl mb-1"></i>
+                                    <span class="text-xs">Esperando listado</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Pie de Panel -->
+                <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
+                    <span class="flex items-center gap-1.5">
+                        <i class="fa-solid fa-shield-halved text-emerald-500"></i> Canal seguro cifrado activo
+                    </span>
+                    <span id="txtDataSourceInfo">Fuente: Esperando archivo</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Listado y Tabla de Testigos -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-8">
+            <div class="p-6 border-b border-slate-100">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-indigo-600"></i> Planilla de Registro de Asistencia
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-1">Lleva el control exacto de tus testigos en tiempo real. Utiliza los filtros rápidos para coordinar la asistencia.</p>
+                    </div>
+                    
+                    <!-- Botones de Acción sobre la Tabla -->
+                    <div class="flex flex-wrap items-center gap-2 admin-only">
+                        <button onclick="setAllAttendance('asistio')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs px-3 py-2 rounded-lg transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-check-double"></i> Marcar todos: SÍ
+                        </button>
+                        <button onclick="setAllAttendance('pendiente')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs px-3 py-2 rounded-lg transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-clock-rotate-left"></i> Restablecer todo
+                        </button>
+                        <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg transition flex items-center gap-1.5 shadow-sm">
+                            <i class="fa-solid fa-file-export"></i> Descargar Excel
+                        </button>
+                        <button onclick="exportToPDF()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg transition flex items-center gap-1.5 shadow-sm">
+                            <i class="fa-solid fa-file-pdf"></i> Descargar PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Barra de Filtros Activos -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mt-6 admin-only">
+                    <!-- Buscador General -->
+                    <div class="relative lg:col-span-2">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        </span>
+                        <input type="text" id="searchQuery" oninput="applyFilters()" placeholder="Buscar por cédula, nombre o puesto..." class="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl transition outline-none">
+                    </div>
+
+                    <!-- Filtro Asistencia -->
+                    <div>
+                        <select id="filterAttendance" onchange="applyFilters()" class="w-full px-3 py-2 text-xs bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl transition outline-none">
+                            <option value="">Asistencia: Todos</option>
+                            <option value="asistio">Asistieron (SÍ)</option>
+                            <option value="no_asistio">No Asistieron (NO)</option>
+                            <option value="pendiente">Pendientes (PND)</option>
+                        </select>
+                    </div>
+
+                    <!-- Filtro Fecha Registro -->
+                    <div>
+                        <select id="filterDateControl" onchange="applyFilters()" class="w-full px-3 py-2 text-xs bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl transition outline-none">
+                            <option value="">Cualquier Fecha</option>
+                        </select>
+                    </div>
+
+                    <!-- Filtro Departamento -->
+                    <div>
+                        <select id="filterDept" onchange="applyFilters()" class="w-full px-3 py-2 text-xs bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl transition outline-none">
+                            <option value="">Todos los Deptos.</option>
+                        </select>
+                    </div>
+
+                    <!-- Filtro Puesto -->
+                    <div>
+                        <select id="filterStation" onchange="applyFilters()" class="w-full px-3 py-2 text-xs bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl transition outline-none">
+                            <option value="">Todos los Puestos</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla Física -->
+            <div class="overflow-x-auto w-full">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+                            <th class="py-3 px-6 text-center">Foto</th>
+                            <th class="py-3 px-6">Cédula</th>
+                            <th class="py-3 px-6">Nombre del Testigo</th>
+                            <th class="py-3 px-6">Departamento / Municipio</th>
+                            <th class="py-3 px-6">Puesto de Votación</th>
+                            <th class="py-3 px-6 text-center">Mesa</th>
+                            <th class="py-3 px-6 text-center">Última Confirmación</th>
+                            <th class="py-3 px-6 text-center w-[180px]">Control Asistencia</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-100 text-xs text-slate-700">
+                        <tr>
+                            <td colspan="8" class="py-12 text-center text-slate-400">
+                                <div class="flex flex-col items-center">
+                                    <i class="fa-solid fa-cloud text-3xl mb-3 block text-indigo-400"></i>
+                                    <p class="text-sm font-semibold">Esperando Datos...</p>
+                                    <p class="text-xs">Sube tu Excel o carga el Demo para inicializar la planilla.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación y Resumen -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <span class="text-xs font-semibold text-slate-500" id="tableSummary">Mostrando 0 de 0 registros</span>
+                <div class="flex items-center gap-2">
+                    <button onclick="changePage(-1)" class="p-2 text-slate-500 hover:text-slate-800 disabled:opacity-40 transition" id="btnPrevPage" disabled>
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <span class="text-xs font-bold text-slate-700" id="currentPageIndicator">Página 1 de 1</span>
+                    <button onclick="changePage(1)" class="p-2 text-slate-500 hover:text-slate-800 disabled:opacity-40 transition" id="btnNextPage" disabled>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal Guía de Uso -->
+    <div id="helpModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl overflow-hidden relative transform scale-95 transition-all duration-300">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                <h3 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-question text-indigo-600"></i> Guía de Uso de E-Testigo con Base de Datos
+                </h3>
+                <button onclick="closeHelpModal()" class="text-slate-400 hover:text-slate-600 transition p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4 text-sm text-slate-600 leading-relaxed overflow-y-auto max-h-[60vh] pr-2">
+                <div>
+                    <h4 class="font-bold text-slate-800 mb-1">1. Registro Seguro en la Nube</h4>
+                    <p>La aplicación se conecta automáticamente al proyecto de Firebase utilizando tus credenciales. Todo cambio que realices se almacena de forma instantánea de manera segura.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-800 mb-1">2. Controlar la Asistencia</h4>
+                    <p>En la planilla, haz clic en <strong>SÍ</strong>, <strong>NO</strong> o <strong>PND</strong>. Los cambios se guardarán con la fecha de control seleccionada.</p>
+                </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-slate-100 flex justify-end">
+                <button onclick="closeHelpModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl transition text-xs shadow-md">
+                    ¡Entendido, gracias!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Configuración de Firebase Propia -->
+    <div id="cloudConfigModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl relative">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                <h3 class="text-base font-bold text-slate-950 flex items-center gap-2">
+                    <i class="fa-solid fa-cloud-gear text-amber-500"></i> Conectar mi Propia Nube (Firebase)
+                </h3>
+                <button onclick="closeCloudConfigModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-500 leading-relaxed mb-4">
+                Si deseas cambiar las credenciales de Firebase, ingresa la configuración JSON a continuación. El sistema se recargará limpiamente para aplicar los cambios.
+            </p>
+            <div class="space-y-3">
+                <label class="block text-xs font-bold text-slate-700">Configuración JSON de Firebase:</label>
+                <textarea id="firebaseConfigTextarea" rows="6" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-mono text-xs focus:ring-2 focus:ring-amber-500 outline-none" placeholder='{
+  "apiKey": "...",
+  "authDomain": "...",
+  "projectId": "...",
+  "storageBucket": "...",
+  "messagingSenderId": "...",
+  "appId": "..."
+}'></textarea>
+            </div>
+            <div class="flex justify-end gap-2 mt-5">
+                <button onclick="closeCloudConfigModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-lg transition">Cancelar</button>
+                <button onclick="saveCustomCloudConfig()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold px-4 py-2 rounded-lg transition">Guardar y Conectar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Diagnóstico Inteligente de Erreores de Firebase -->
+    <div id="diagnosticModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl relative border border-rose-100">
+            <div class="flex items-center justify-between border-b border-rose-100 pb-3 mb-4">
+                <h3 class="text-base font-extrabold text-slate-950 flex items-center gap-2">
+                    <i class="fa-solid fa-laptop-medical text-rose-500"></i> Asistente de Diagnóstico de Firebase
+                </h3>
+                <button onclick="closeDiagnosticModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4 text-xs text-slate-600 leading-relaxed overflow-y-auto max-h-[65vh] pr-1">
+                <div class="bg-rose-50 p-3.5 rounded-xl border border-rose-100">
+                    <p class="font-bold text-rose-900 mb-1">Código de Error Reportado por Firebase:</p>
+                    <code class="block font-mono text-[11px] text-rose-700 bg-white p-2 rounded border border-rose-150" id="diagnosticErrorCode">Ninguno</code>
+                    <p class="mt-2 font-semibold text-slate-700">Mensaje del Servidor:</p>
+                    <p id="diagnosticErrorMsg" class="font-mono text-[10px] mt-0.5 text-slate-500">Detalles no capturados.</p>
+                </div>
+
+                <!-- Soluciones Dinámicas -->
+                <div id="diag_auth_block" class="hidden space-y-2.5">
+                    <h4 class="font-bold text-indigo-900 text-sm flex items-center gap-1.5 border-b pb-1">
+                        <span class="bg-indigo-100 text-indigo-700 rounded-full h-5 w-5 flex items-center justify-center text-[10px]">1</span>
+                        Causa: Autenticación Anónima Deshabilitada
+                    </h4>
+                    <p>Firebase bloquea los accesos automáticos para evitar intrusos si no tiene encendido el protocolo de usuarios anónimos.</p>
+                    <div class="bg-slate-50 p-3 rounded-lg border">
+                        <p class="font-bold text-slate-800 mb-1">Cómo habilitarlo en un minuto:</p>
+                        <ol class="list-decimal pl-4 space-y-1.5 text-[11px]">
+                            <li>Abre tu <a href="https://console.firebase.google.com/" target="_blank" class="text-blue-600 hover:underline font-bold">Consola de Firebase</a> y entra a tu proyecto <strong>testigos-6ecc7</strong>.</li>
+                            <li>En la barra izquierda haz clic en <strong>Authentication</strong>.</li>
+                            <li>Haz clic en la pestaña <strong>Sign-in method</strong> (Método de inicio de sesión).</li>
+                            <li>Haz clic en <strong>Añadir nuevo proveedor</strong>, selecciona la opción <strong>Anónimo</strong> (Anonymous), actívala y dale a <strong>Guardar</strong>.</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div id="diag_rules_block" class="hidden space-y-2.5">
+                    <h4 class="font-bold text-indigo-900 text-sm flex items-center gap-1.5 border-b pb-1">
+                        <span class="bg-indigo-100 text-indigo-700 rounded-full h-5 w-5 flex items-center justify-center text-[10px]">2</span>
+                        Causa: Reglas de Firestore Bloqueadas (Permission Denied)
+                    </h4>
+                    <p>El error indica que tus reglas de base de datos impiden la lectura o escritura del canal de testigos.</p>
+                    <div class="bg-slate-50 p-3 rounded-lg border">
+                        <p class="font-bold text-slate-800 mb-1">Cómo actualizar tus reglas:</p>
+                        <ol class="list-decimal pl-4 space-y-1.5 text-[11px]">
+                            <li>Abre tu <a href="https://console.firebase.google.com/" target="_blank" class="text-blue-600 hover:underline font-bold">Consola de Firebase</a>.</li>
+                            <li>Haz clic en <strong>Firestore Database</strong> en el menú izquierdo.</li>
+                            <li>Entra a la pestaña de <strong>Reglas (Rules)</strong>.</li>
+                            <li>Reemplaza el código de reglas por el siguiente y dale a <strong>Publicar</strong>:</li>
+                        </ol>
+                        <pre class="bg-slate-900 text-emerald-400 p-2 rounded text-[10px] font-mono mt-2 overflow-x-auto">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}</pre>
+                    </div>
+                </div>
+
+                <div id="diag_not_found_block" class="hidden space-y-2.5">
+                    <h4 class="font-bold text-indigo-900 text-sm flex items-center gap-1.5 border-b pb-1">
+                        <span class="bg-indigo-100 text-indigo-700 rounded-full h-5 w-5 flex items-center justify-center text-[10px]">3</span>
+                        Causa: Base de Datos de Firestore no ha sido Creada
+                    </h4>
+                    <p>Has configurado Firebase pero aún no has inicializado el módulo de base de datos de Firestore en tu proyecto.</p>
+                    <div class="bg-slate-50 p-3 rounded-lg border">
+                        <p class="font-bold text-slate-800 mb-1">Cómo crear la base de datos:</p>
+                        <ol class="list-decimal pl-4 space-y-1.5 text-[11px]">
+                            <li>En la consola de Firebase del proyecto, haz clic en <strong>Firestore Database</strong>.</li>
+                            <li>Haz clic en el botón central de <strong>Crear Base de Datos</strong>.</li>
+                            <li>Selecciona la ubicación de tu servidor (ej. <i>us-central1</i>) y elige <strong>Comenzar en modo de prueba</strong> para evitar bloqueos iniciales.</li>
+                            <li>Completa el asistente.</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div id="diag_generic_block" class="space-y-2.5">
+                    <h4 class="font-bold text-slate-800 text-xs">Otras verificaciones generales:</h4>
+                    <ul class="list-disc pl-4 space-y-1 text-[11px]">
+                        <li>Verifica que no tengas bloqueadores de publicidad (AdBlockers) o VPN activados que bloqueen peticiones a servidores de Google.</li>
+                        <li>Asegúrate de estar conectado a una red estable de internet.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-5 pt-3 border-t border-slate-100 flex justify-between items-center">
+                <span class="text-[10px] text-slate-400">testigos-6ecc7 &bull; Control del Estado</span>
+                <button onclick="closeDiagnosticModal()" class="bg-slate-950 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-md">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmación de Reset Modal -->
+    <div id="resetModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <h3 class="text-base font-bold text-slate-950 mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-rose-500"></i> ¿Deseas eliminar todo?
+            </h3>
+            <p class="text-xs text-slate-500 leading-relaxed mb-6">
+                Esta acción eliminará de forma permanente tu lista de testigos y su historial de asistencia registrado en la base de datos de la nube. Esta acción no se puede deshacer.
+            </p>
+            <div class="flex justify-end gap-2.5">
+                <button onclick="closeResetModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-lg transition">Cancelar</button>
+                <button onclick="resetAllCloudData()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition">Sí, Eliminar de la Nube</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification (Mensaje flotante elegante) -->
+    <div id="toastNotification" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-slate-950 text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-800 max-w-sm">
+            <div class="p-2 rounded-full text-sm flex items-center justify-center bg-slate-800" id="toastIconContainer">
+                <i class="fa-solid fa-check text-emerald-400" id="toastIcon"></i>
+            </div>
+            <div>
+                <p class="text-xs font-bold" id="toastTitle">Alerta</p>
+                <p class="text-[10px] text-slate-300" id="toastMessage">Detalles de la operación.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pie de Página -->
+    <footer class="bg-slate-950 text-slate-400 py-8 border-t border-slate-900 text-xs mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 bg-yellow-400 rounded-full"></div>
+                <div class="w-2.5 h-2.5 bg-blue-600 rounded-full"></div>
+                <div class="w-2.5 h-2.5 bg-red-600 rounded-full"></div>
+                <span class="font-bold text-slate-300 ml-1">E-Testigo Colombia - Segunda Vuelta</span>
+            </div>
+            <p class="text-center sm:text-right text-slate-500">
+                Coordinación independiente y transparente de testigos electorales.
+                <br> Procesamiento de datos local y remoto seguro.
+            </p>
+        </div>
+    </footer>
+
+    </div> <!-- Fin de appContainer -->
+
+    <!-- LÓGICA DE FIREBASE Y PROCESAMIENTO GENERAL -->
+    <script type="module">
+        import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDocs, deleteDoc, onSnapshot, collection, writeBatch, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-colombia-testigos-app';
+        
+        // Tus datos reales de Firebase pre-configurados para cargarse de forma automática
+        const defaultFirebaseConfig = {
+            apiKey: "AIzaSyCo7zeAPsYTEjhd7m5_c3KG6tWXc-JeQtc",
+            authDomain: "testigos-6ecc7.firebaseapp.com",
+            projectId: "testigos-6ecc7",
+            storageBucket: "testigos-6ecc7.firebasestorage.app",
+            messagingSenderId: "1042545226770",
+            appId: "1:1042545226770:web:4a049d919a5d48ce9914cb",
+            measurementId: "G-98Z1WPTGRY"
+        };
+
+        let firebaseConfig = defaultFirebaseConfig;
+
+        // Intentar cargar configuración de Firebase local personalizada si el usuario la guardó antes
+        const savedLocalConfig = localStorage.getItem('custom_firebase_config');
+        if (savedLocalConfig) {
+            try {
+                // Si la configuración guardada corresponde al proyecto anterior en conflicto, la limpiamos automáticamente
+                if (savedLocalConfig.includes("testigos-d23c8")) {
+                    localStorage.removeItem('custom_firebase_config');
+                    firebaseConfig = defaultFirebaseConfig;
+                } else {
+                    firebaseConfig = JSON.parse(savedLocalConfig);
+                }
+            } catch (e) {
+                console.error("Error al parsear la configuración de nube guardada", e);
+            }
+        }
+
+        let app = null, db = null, auth = null;
+        let isFirebaseActive = false;
+        let currentUser = null;
+
+        // Inicializar Firebase de forma segura evitando duplicados
+        function setupFirebase() {
+            if (firebaseConfig && firebaseConfig.apiKey) {
+                try {
+                    if (getApps().length === 0) {
+                        app = initializeApp(firebaseConfig);
+                    } else {
+                        app = getApp();
+                    }
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+                    isFirebaseActive = true;
+                    document.getElementById('localWarningBanner').classList.add('hidden');
+                    document.getElementById('connectionErrorBanner').classList.add('hidden');
+                } catch (error) {
+                    console.error("Fallo al inicializar Firebase real:", error);
+                    isFirebaseActive = false;
+                    document.getElementById('localWarningBanner').classList.remove('hidden');
+                    showDiagnosticError("setup", error);
+                }
+            } else {
+                console.warn("Utilizando modo local. No se ha ingresado una Firebase Config válida.");
+                isFirebaseActive = false;
+                document.getElementById('localWarningBanner').classList.remove('hidden');
+            }
+        }
+
+        // Función para actualizar los estados del indicador visual de sincronización (¡Corregido!)
+        window.updateSyncIndicator = function(status, text) {
+            const dot = document.getElementById('syncDot');
+            const txt = document.getElementById('syncText');
+            const indicator = document.getElementById('cloudSyncIndicator');
+            
+            if (!dot || !txt || !indicator) return;
+            
+            txt.textContent = text;
+            
+            if (status === "synced") {
+                dot.className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
+                const ping = dot.parentElement.querySelector('.animate-ping');
+                if (ping) ping.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
+                indicator.className = "bg-slate-800 border border-emerald-700/50 px-3.5 py-2 rounded-full text-xs font-semibold flex items-center gap-2 text-emerald-300";
+            } else if (status === "connecting") {
+                dot.className = "relative inline-flex rounded-full h-2 w-2 bg-amber-500";
+                const ping = dot.parentElement.querySelector('.animate-ping');
+                if (ping) ping.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75";
+                indicator.className = "bg-slate-800 border border-slate-700 px-3.5 py-2 rounded-full text-xs font-semibold flex items-center gap-2 text-slate-300";
+            } else { // offline / error
+                dot.className = "relative inline-flex rounded-full h-2 w-2 bg-rose-500";
+                const ping = dot.parentElement.querySelector('.animate-ping');
+                if (ping) ping.className = "absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-0";
+                indicator.className = "bg-slate-800 border border-rose-900/50 px-3.5 py-2 rounded-full text-xs font-semibold flex items-center gap-2 text-rose-300";
+            }
+        }
+
+        // Mostrar modal y banner de Diagnóstico si algo falla
+        window.showDiagnosticError = function(phase, error) {
+            console.error("Diagnóstico Capturado:", phase, error);
+            
+            const banner = document.getElementById('connectionErrorBanner');
+            const bannerMsg = document.getElementById('connectionErrorShortMsg');
+            const diagCode = document.getElementById('diagnosticErrorCode');
+            const diagMsg = document.getElementById('diagnosticErrorMsg');
+            
+            banner.classList.remove('hidden');
+            window.updateSyncIndicator("error", "Error de Conexión");
+
+            let errCode = error.code || "UNKNOWN";
+            let errMsg = error.message || String(error);
+
+            diagCode.textContent = errCode;
+            diagMsg.textContent = errMsg;
+
+            // Mostrar motivos amigables
+            if (phase === "auth") {
+                bannerMsg.textContent = "El servidor de Firebase rechazó la autenticación. Es probable que debas activar el acceso Anónimo.";
+            } else if (phase === "sync") {
+                bannerMsg.textContent = "Error al intentar leer/escribir datos en Firestore. Revisa las reglas de seguridad de tu base de datos.";
+            } else {
+                bannerMsg.textContent = `Error durante el inicio (${errCode}). Haz clic en Resolver para ver la guía.`;
+            }
+
+            // Activar bloques correspondientes del modal de diagnóstico
+            document.getElementById('diag_auth_block').classList.add('hidden');
+            document.getElementById('diag_rules_block').classList.add('hidden');
+            document.getElementById('diag_not_found_block').classList.add('hidden');
+
+            if (errCode.includes('auth/operation-not-allowed')) {
+                document.getElementById('diag_auth_block').classList.remove('hidden');
+            } else if (errCode.includes('permission-denied')) {
+                document.getElementById('diag_rules_block').classList.remove('hidden');
+            } else if (errCode.includes('not-found') || errMsg.includes('database')) {
+                document.getElementById('diag_not_found_block').classList.remove('hidden');
+            } else {
+                // Si no se sabe exactamente, habilitamos guías recomendadas por defecto
+                document.getElementById('diag_auth_block').classList.remove('hidden');
+                document.getElementById('diag_rules_block').classList.remove('hidden');
+            }
+        }
+
+        // Función de autenticación segura (RULE 3)
+        async function authenticateUser() {
+            setupFirebase();
+            if (!isFirebaseActive) {
+                updateSyncIndicator("offline", "Guardando Localmente");
+                document.getElementById('userIdDisplay').textContent = "Sesión Local Desconectada";
+                return;
+            }
+
+            try {
+                updateSyncIndicator("connecting", "Autenticando en tu nube...");
+                let credential;
+                
+                // Prioridad de custom token (RULE 3) con protección y fallback para bases de datos del usuario
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    try {
+                        credential = await signInWithCustomToken(auth, __initial_auth_token);
+                    } catch (customTokenError) {
+                        console.warn("Token de la plataforma incompatible con tu proyecto Firebase. Usando autenticación anónima de respaldo:", customTokenError);
+                        credential = await signInAnonymously(auth);
+                    }
+                } else {
+                    credential = await signInAnonymously(auth);
+                }
+                
+                currentUser = credential.user;
+                document.getElementById('userIdDisplay').textContent = `ID: ${currentUser.uid}`;
+                updateSyncIndicator("synced", "Conectado a tu Nube");
+                
+                // Suscribirse a los cambios en tiempo real
+                subscribeToWitnessData();
+
+            } catch (error) {
+                console.error("Fallo de autenticación en Firebase:", error);
+                showDiagnosticError("auth", error);
+            }
+        }
+
+        // Suscribirse al canal personal en la nube utilizando el Path obligatorio (RULE 1)
+        let unsubscribeWitnesses = null;
+        
+        function subscribeToWitnessData() {
+            if (!isFirebaseActive || !currentUser) return;
+
+            const pathCollection = collection(db, 'artifacts', appId, 'public', 'data', 'witness_attendance');
+            updateSyncIndicator("connecting", "Descargando testigos...");
+
+            // onSnapshot con callback de error obligatorio
+            unsubscribeWitnesses = onSnapshot(pathCollection, (snapshot) => {
+                const cloudData = [];
+                snapshot.forEach(doc => {
+                    cloudData.push(doc.data());
+                });
+
+                if (cloudData.length > 0) {
+                    processedResults = cloudData;
+                    
+                    document.getElementById('txtFileWitnesses').textContent = "Base_Datos_Sincronizada.xlsx";
+                    document.getElementById('witnessInfoCard').classList.remove('hidden');
+                    document.getElementById('witnessLoadedTitle').textContent = "Sincronizado con la Nube";
+                    document.getElementById('witnessLoadedCount').textContent = `${processedResults.length} testigos cargados`;
+                    document.getElementById('demoBtn').style.display = "none";
+                    
+                    initializeDropdowns();
+                    applyFilters();
+                    updateMetrics();
+                    updateCharts();
+                } else {
+                    if (processedResults.length > 0 && !witnessFileLoaded) {
+                        processedResults = [];
+                        applyFilters();
+                        updateMetrics();
+                        updateCharts();
+                    }
+                    document.getElementById('demoBtn').style.display = "block";
+                }
+                
+                updateSyncIndicator("synced", "Sincronizado");
+                document.getElementById('connectionErrorBanner').classList.add('hidden'); // Sincronizado OK, quitar banner de error
+            }, (error) => {
+                console.error("Error al escuchar cambios en base de datos:", error);
+                showDiagnosticError("sync", error);
+            });
+        }
+
+        // Guardar o actualizar un testigo individual en tiempo real en la nube (RULE 1)
+        window.saveWitnessToCloud = async function(witness) {
+            if (!isFirebaseActive || !currentUser) {
+                // Almacenamiento local temporal si está offline/stand-alone
+                const idx = processedResults.findIndex(w => w.cedula === witness.cedula);
+                if (idx !== -1) processedResults[idx] = witness;
+                applyFilters();
+                updateMetrics();
+                updateCharts();
+                return;
+            }
+
+            try {
+                updateSyncIndicator("connecting", "Guardando cambios...");
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'witness_attendance', witness.cedula);
+                await setDoc(docRef, witness);
+                updateSyncIndicator("synced", "Guardado");
+            } catch (error) {
+                console.error("Error al guardar testigo en la nube:", error);
+                showDiagnosticError("sync", error);
+            }
+        }
+
+        // Guardar por lotes (Batch) cuando se sube un nuevo archivo Excel masivo (RULE 1)
+        window.saveBatchWitnessesToCloud = async function(witnessList) {
+            if (!isFirebaseActive || !currentUser) {
+                processedResults = witnessList;
+                applyFilters();
+                updateMetrics();
+                updateCharts();
+                showToast("Importado Local", `${witnessList.length} testigos listos en tu navegador.`, "info");
+                return;
+            }
+
+            try {
+                updateSyncIndicator("connecting", "Subiendo testigos...");
+                const chunkSize = 400;
+                for (let i = 0; i < witnessList.length; i += chunkSize) {
+                    const chunk = witnessList.slice(i, i + chunkSize);
+                    const batch = writeBatch(db);
+                    
+                    chunk.forEach(w => {
+                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'witness_attendance', w.cedula);
+                        batch.set(docRef, w);
+                    });
+                    
+                    await batch.commit();
+                }
+                
+                updateSyncIndicator("synced", "Sincronizado");
+                showToast("Base Guardada", `${witnessList.length} testigos guardados en tu base de datos remota.`, "success");
+            } catch (error) {
+                console.error("Error al guardar lote en la nube:", error);
+                showDiagnosticError("sync", error);
+            }
+        }
+
+        // Borrar todos los registros de la nube
+        window.resetAllCloudData = async function() {
+            closeResetModal();
+            if (!isFirebaseActive || !currentUser) {
+                processedResults = [];
+                applyFilters();
+                updateMetrics();
+                updateCharts();
+                document.getElementById('witnessInfoCard').classList.add('hidden');
+                document.getElementById('embeddedLocationBadge').classList.add('hidden');
+                document.getElementById('demoBtn').style.display = "block";
+                showToast("Datos Eliminados", "Planilla local reiniciada.", "info");
+                return;
+            }
+
+            try {
+                updateSyncIndicator("connecting", "Eliminando base...");
+                
+                const querySnapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'witness_attendance'));
+                const batch = writeBatch(db);
+                
+                querySnapshot.forEach((doc) => {
+                    batch.delete(doc.ref);
+                });
+                
+                await batch.commit();
+                
+                processedResults = [];
+                applyFilters();
+                updateMetrics();
+                updateCharts();
+                
+                document.getElementById('fileWitnesses').value = "";
+                document.getElementById('txtFileWitnesses').textContent = "Seleccionar o arrastrar Excel";
+                document.getElementById('witnessInfoCard').classList.add('hidden');
+                document.getElementById('embeddedLocationBadge').classList.add('hidden');
+                document.getElementById('demoBtn').style.display = "block";
+                
+                updateSyncIndicator("synced", "Nube vaciada");
+                showToast("Base Limpiada", "Todos los registros han sido borrados de la nube.", "info");
+
+            } catch (error) {
+                console.error("Error al limpiar base de datos en nube:", error);
+                showDiagnosticError("sync", error);
+            }
+        }
+
+        // Guardar la configuración de Firebase ingresada y forzar recarga limpia
+        window.saveCustomCloudConfig = function() {
+            const configText = document.getElementById('firebaseConfigTextarea').value.trim();
+            if (!configText) {
+                showToast("Campo Vacío", "Por favor ingresa un objeto de configuración de Firebase válido.", "error");
+                return;
+            }
+
+            try {
+                const parsed = JSON.parse(configText);
+                if (!parsed.apiKey || !parsed.projectId) {
+                    showToast("Formato Inválido", "El objeto debe incluir al menos apiKey y projectId.", "error");
+                    return;
+                }
+
+                localStorage.setItem('custom_firebase_config', configText);
+                closeCloudConfigModal();
+                
+                showToast("Guardando credenciales...", "Recargando aplicación para inicializar nueva conexión remota segura.", "info");
+                
+                // Recargar el navegador para una inicialización limpia sin duplicados en memoria
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } catch (e) {
+                showToast("Error de JSON", "No se pudo interpretar el formato. Asegúrate de copiar las llaves completas { }.", "error");
+            }
+        }
+
+        // Inicializar al cargar la página
+        window.addEventListener('load', () => {
+            authenticateUser();
+        });
+    </script>
+
+    <script>
+        // --- BASE DE DATOS GEOGRÁFICA DE COLOMBIA ---
+        const COLOMBIAN_ELECTION_DIVISIONS = [
+            {
+                dept: "BOGOTÁ D.C.",
+                municipalities: [
+                    { name: "BOGOTÁ D.C.", stations: ["CORFERIAS - PUESTO CENSO", "COLEGIO MAYOR DE SAN BARTOLOME", "UNIDAD DEPORTIVA EL CAMPIN", "PLAZA DE BOLIVAR", "COLEGIO MARRUECOS Y MOLINOS", "UNIVERSIDAD NACIONAL DE COLOMBIA", "PORTAL KENNEDY", "COLEGIO CLARETIANO SUBA"] }
+                ]
+            },
+            {
+                dept: "ANTIOQUIA",
+                municipalities: [
+                    { name: "MEDELLÍN", stations: ["PLAZA MAYOR EXPOSICIONES", "COLEGIO MARCO FIDEL SUAREZ", "UNIVERSIDAD DE ANTIOQUIA", "COLEGIO SAN JAVIER", "INSTITUCIÓN EDUCATIVA JORGE ROBLEDO"] },
+                    { name: "BELLO", stations: ["POLIDEPORTIVO TULIO OSPINA", "COLEGIO HERNAN VILLA BAENA"] },
+                    { name: "ENVIGADO", stations: ["COLEGIO DE ENVIGADO", "PARQUE RECREATIVO EL POLIDEPORTIVO"] }
+                ]
+            },
+            {
+                dept: "VALLE DEL CAUCA",
+                municipalities: [
+                    { name: "CALI", stations: ["COLISEO DEL PUEBLO", "UNIVERSIDAD DEL VALLE - SEDE MELENDEZ", "COLEGIO INEM JORGE ISAACS", "COLEGIO DE SANTA LIBRADA"] },
+                    { name: "PALMIRA", stations: ["COLEGIO CARDENAS CENTRO", "COLISEO DE FERIAS ALVARO DOMINGUEZ VALLECIELLA"] },
+                    { name: "BUENAVENTURA", stations: ["UNIVERSIDAD DEL PACIFICO", "COLEGIO GERARDO VALENCIA CANO"] }
+                ]
+            },
+            {
+                dept: "ATLÁNTICO",
+                municipalities: [
+                    { name: "BARRANQUILLA", stations: ["COLEGIO COLON", "UNIVERSIDAD DEL ATLANTICO - SEDE NORTE", "COLEGIO LOURDES", "ESTADIO METROPOLITANO"] },
+                    { name: "SOLEDAD", stations: ["COLEGIO INEM SOLEDAD", "COLEGIO EUCARISTICO DE LA MILAGROSA"] }
+                ]
+            },
+            {
+                dept: "BOLÍVAR",
+                municipalities: [
+                    { name: "CARTAGENA", stations: ["CENTRO DE CONVENCIONES JULIO CESAR TURBAY", "UNIVERSIDAD DE CARTAGENA - SEDE PIEDRA DE BOLIVAR", "COLEGIO COOPERATIVO DE COMFENALCO"] }
+                ]
+            },
+            {
+                dept: "MAGDALENA",
+                municipalities: [
+                    { name: "SANTA MARTA", stations: ["UNIVERSIDAD DEL MAGDALENA", "COLEGIO HUGO J. BERMUDEZ", "INEM SIMON BOLIVAR"] },
+                    { name: "ARACATACA", stations: ["COLEGIO GABRIEL GARCIA MARQUEZ", "ESCUELA URBANA MIXTA NUMERO 1"] },
+                    { name: "CIÉNAGA", stations: ["COLEGIO SAN FRANCISCO DE ASIS", "INSTITUTO TECNICO DE CIENAGA"] }
+                ]
+            },
+            {
+                dept: "SANTANDER",
+                municipalities: [
+                    { name: "BUCARAMANGA", stations: ["COLEGIO PILOTO TECNOLOGICO DAMASO ZAPATA", "UNIVERSIDAD INDUSTRIAL DE SANTANDER (UIS)", "COLEGIO GABRIELA MISTRAL"] },
+                    { name: "FLORIDABLANCA", stations: ["COLEGIO GONZALO JIMENEZ DE QUESADA", "UNIVERSIDAD PONTIFICIA BOLIVARIANA"] }
+                ]
+            },
+            {
+                dept: "NARIÑO",
+                municipalities: [
+                    { name: "PASTO", stations: ["COLEGIO CIUDAD DE PASTO", "UNIVERSIDAD DE NARIÑO - SEDE TOROBALJO", "INSTITUCION EDUCATIVA MARIANO OSPINA RODRIGUEZ"] }
+                ]
+            }
+        ];
+
+        // --- VARIABLES DE ESTADO ---
+        let rawWitnessesData = []; 
+        let rawCensusData = []; 
+        let processedResults = []; 
+        window.getWitnessesData = () => processedResults;
+        let filteredResults = []; 
+        
+        let witnessFileLoaded = false;
+        let censusFileLoaded = false;
+        let currentSourceMode = "excel"; 
+        let hasEmbeddedLocations = false; 
+
+        // Paginación
+        let currentPage = 1;
+        const rowsPerPage = 10;
+
+        // Referencias a los gráficos
+        let chartDeptsInstance = null;
+        let chartAttendanceInstance = null;
+
+        // --- INICIALIZACIÓN ---
+        window.addEventListener('DOMContentLoaded', () => {
+            setupFileHandlers();
+            initializeDropdowns();
+            
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('controlDateInput').value = today;
+
+            const helpModal = document.getElementById('helpModal');
+            helpModal.addEventListener('click', (e) => {
+                if (e.target === helpModal) closeHelpModal();
+            });
+            
+            const resetModal = document.getElementById('resetModal');
+            resetModal.addEventListener('click', (e) => {
+                if (e.target === resetModal) closeResetModal();
+            });
+
+            const diagnosticModal = document.getElementById('diagnosticModal');
+            diagnosticModal.addEventListener('click', (e) => {
+                if (e.target === diagnosticModal) closeDiagnosticModal();
+            });
+        });
+
+        function showToast(title, message, type = "success") {
+            const toast = document.getElementById('toastNotification');
+            const icon = document.getElementById('toastIcon');
+            const iconContainer = document.getElementById('toastIconContainer');
+            const toastTitle = document.getElementById('toastTitle');
+            const toastMessage = document.getElementById('toastMessage');
+
+            if (type === "success") {
+                icon.className = "fa-solid fa-check text-emerald-400";
+                iconContainer.className = "p-1 rounded-full text-sm flex items-center justify-center bg-slate-800";
+            } else if (type === "error") {
+                icon.className = "fa-solid fa-triangle-exclamation text-rose-400";
+                iconContainer.className = "p-1 rounded-full text-sm flex items-center justify-center bg-rose-950/40";
+            } else if (type === "info") {
+                icon.className = "fa-solid fa-circle-info text-blue-400";
+                iconContainer.className = "p-1 rounded-full text-sm flex items-center justify-center bg-blue-950/40";
+            }
+
+            toastTitle.textContent = title;
+            toastMessage.textContent = message;
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+            }, 5000);
+        }
+
+        function openHelpModal() {
+            document.getElementById('helpModal').classList.remove('hidden');
+        }
+
+        function closeHelpModal() {
+            document.getElementById('helpModal').classList.add('hidden');
+        }
+
+        function openCloudConfigModal() {
+            const saved = localStorage.getItem('custom_firebase_config');
+            if (saved) {
+                document.getElementById('firebaseConfigTextarea').value = saved;
+            } else {
+                document.getElementById('firebaseConfigTextarea').value = JSON.stringify({
+                    apiKey: "AIzaSyAlwIcgFgStakokk1KI8qut_jeEIwcsBKE",
+                    authDomain: "testigos-d23c8.firebaseapp.com",
+                    projectId: "testigos-d23c8",
+                    storageBucket: "testigos-d23c8.firebasestorage.app",
+                    messagingSenderId: "600485171858",
+                    appId: "1:600485171858:web:22f112a75ab6a8f4440c4b",
+                    measurementId: "G-TK4CC6RB5Y"
+                }, null, 2);
+            }
+            document.getElementById('cloudConfigModal').classList.remove('hidden');
+        }
+
+        function closeCloudConfigModal() {
+            document.getElementById('cloudConfigModal').classList.add('hidden');
+        }
+
+        function openDiagnosticModal() {
+            document.getElementById('diagnosticModal').classList.remove('hidden');
+        }
+
+        function closeDiagnosticModal() {
+            document.getElementById('diagnosticModal').classList.add('hidden');
+        }
+
+        function confirmResetAllData() {
+            document.getElementById('resetModal').classList.remove('hidden');
+        }
+
+        function closeResetModal() {
+            document.getElementById('resetModal').classList.add('hidden');
+        }
+
+        function toggleDataSourceMode(mode) {
+            currentSourceMode = mode;
+            const censusContainer = document.getElementById('censusUploadContainer');
+            const labelSource = document.getElementById('txtDataSourceInfo');
+
+            if (mode === "census") {
+                censusContainer.classList.remove('hidden');
+                labelSource.textContent = "Fuente: Cruce con Censo Externo";
+            } else if (mode === "simulation") {
+                censusContainer.classList.add('hidden');
+                labelSource.textContent = "Fuente: Simulación Predictiva Registraduría";
+            } else {
+                censusContainer.classList.add('hidden');
+                labelSource.textContent = "Fuente: Datos extraídos del Excel Cargado";
+            }
+        }
+
+        // --- MANEJO DE ARCHIVOS EXCEL ---
+        function setupFileHandlers() {
+            const fileWitnesses = document.getElementById('fileWitnesses');
+            const dropzoneWitnesses = document.getElementById('dropzoneWitnesses');
+
+            fileWitnesses.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) handleWitnessesFile(file);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropzoneWitnesses.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropzoneWitnesses.classList.add('border-indigo-500', 'bg-indigo-50/40');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropzoneWitnesses.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropzoneWitnesses.classList.remove('border-indigo-500', 'bg-indigo-50/40');
+                }, false);
+            });
+
+            dropzoneWitnesses.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const file = dt.files[0];
+                if (file) handleWitnessesFile(file);
+            });
+
+            const fileCensus = document.getElementById('fileCensus');
+            const dropzoneCensus = document.getElementById('dropzoneCensus');
+
+            fileCensus.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) handleCensusFile(file);
+            });
+        }
+
+        function handleWitnessesFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                    if (jsonData.length === 0) {
+                        showToast("Error", "El archivo de testigos está vacío.", "error");
+                        return;
+                    }
+
+                    let detectedEmbeddedLocations = false;
+
+                    const normalized = jsonData.map(row => {
+                        const newRow = {};
+                        for (let key in row) {
+                            const cleanKey = key.toLowerCase().trim()
+                                .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                            
+                            if (cleanKey === "cedula" || cleanKey === "documento" || cleanKey === "id" || cleanKey === "identificacion" || cleanKey === "numero") {
+                                newRow.cedula = String(row[key]).trim();
+                            } 
+                            else if (cleanKey === "nombre" || cleanKey === "nombres" || cleanKey === "nombre completo") {
+                                newRow.nombre = row[key];
+                            } else if (cleanKey === "apellido" || cleanKey === "apellidos") {
+                                newRow.apellido = row[key];
+                            }
+                            else if (cleanKey === "departamento" || cleanKey === "depto" || cleanKey === "dpto" || cleanKey === "provincia") {
+                                newRow.depto = String(row[key]).toUpperCase().trim();
+                                detectedEmbeddedLocations = true;
+                            }
+                            else if (cleanKey === "municipio" || cleanKey === "ciudad" || cleanKey === "muni" || cleanKey === "localidad") {
+                                newRow.muni = String(row[key]).toUpperCase().trim();
+                                detectedEmbeddedLocations = true;
+                            }
+                            else if (cleanKey === "puesto" || cleanKey === "puesto de votacion" || cleanKey === "puesto_votacion" || cleanKey === "colegio" || cleanKey === "lugar") {
+                                newRow.puesto = String(row[key]).toUpperCase().trim();
+                                detectedEmbeddedLocations = true;
+                            }
+                            else if (cleanKey === "mesa" || cleanKey === "mesa de votacion" || cleanKey === "mesa_votacion" || cleanKey === "nro_mesa") {
+                                newRow.mesa = String(row[key]).trim();
+                                detectedEmbeddedLocations = true;
+                            }
+                        }
+                        
+                        if (!newRow.nombre) {
+                            for (let key in row) {
+                                if (key.toLowerCase().includes("name") || key.toLowerCase().includes("testigo")) {
+                                    newRow.nombre = row[key];
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!newRow.cedula) {
+                            for (let key in row) {
+                                if (!isNaN(row[key]) && String(row[key]).length >= 5 && String(row[key]).length <= 11) {
+                                    newRow.cedula = String(row[key]).trim();
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (newRow.nombre && newRow.apellido) {
+                            newRow.nombreCompleto = `${newRow.nombre} ${newRow.apellido}`;
+                        } else {
+                            newRow.nombreCompleto = newRow.nombre || "TESTIGO SIN NOMBRE REGISTRADO";
+                        }
+
+                        return newRow;
+                    });
+
+                    rawWitnessesData = normalized.filter(item => item.cedula && /^[0-9]+$/.test(item.cedula.replace(/[\s.-]/g, '')));
+                    
+                    if (rawWitnessesData.length === 0) {
+                        showToast("Error", "No se encontró una columna de 'Cédula' válida.", "error");
+                        return;
+                    }
+
+                    rawWitnessesData.forEach(item => {
+                        item.cedula = item.cedula.replace(/[\s.-]/g, '');
+                    });
+
+                    witnessFileLoaded = true;
+                    hasEmbeddedLocations = detectedEmbeddedLocations;
+
+                    document.getElementById('txtFileWitnesses').textContent = file.name;
+                    document.getElementById('witnessInfoCard').classList.remove('hidden');
+                    document.getElementById('witnessLoadedTitle').textContent = file.name;
+                    document.getElementById('witnessLoadedCount').textContent = `${rawWitnessesData.length} testigos identificados`;
+                    
+                    if (hasEmbeddedLocations) {
+                        document.getElementById('embeddedLocationBadge').classList.remove('hidden');
+                        document.querySelector('input[name="dataSourceMode"][value="excel"]').checked = true;
+                        toggleDataSourceMode('excel');
+                    } else {
+                        document.getElementById('embeddedLocationBadge').classList.add('hidden');
+                        document.querySelector('input[name="dataSourceMode"][value="simulation"]').checked = true;
+                        toggleDataSourceMode('simulation');
+                    }
+
+                    showToast("Archivo Cargado", `Se identificaron ${rawWitnessesData.length} testigos. Confirma la fuente y pulsa "Consultar Mesas".`, "success");
+
+                } catch (error) {
+                    console.error(error);
+                    showToast("Error de Lectura", "No se pudo leer el archivo Excel.", "error");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function handleCensusFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                    if (jsonData.length === 0) {
+                        showToast("Error", "El censo está vacío.", "error");
+                        return;
+                    }
+
+                    rawCensusData = jsonData.map(row => {
+                        let cedula = "";
+                        let depto = "";
+                        let muni = "";
+                        let puesto = "";
+                        let mesa = "";
+
+                        for (let key in row) {
+                            const cleanKey = key.toLowerCase().trim()
+                                .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+                            if (cleanKey === "cedula" || cleanKey === "documento" || cleanKey === "id" || cleanKey === "identificacion") {
+                                cedula = String(row[key]).trim().replace(/[\s.-]/g, '');
+                            } else if (cleanKey === "departamento" || cleanKey === "dpto" || cleanKey === "estado") {
+                                depto = String(row[key]).toUpperCase().trim();
+                            } else if (cleanKey === "municipio" || cleanKey === "ciudad" || cleanKey === "muni") {
+                                muni = String(row[key]).toUpperCase().trim();
+                            } else if (cleanKey === "puesto" || cleanKey === "puesto de votacion" || cleanKey === "colegio") {
+                                puesto = String(row[key]).toUpperCase().trim();
+                            } else if (cleanKey === "mesa" || cleanKey === "mesa de votacion") {
+                                mesa = String(row[key]).trim();
+                            }
+                        }
+
+                        return { cedula, depto, muni, puesto, mesa };
+                    }).filter(item => item.cedula && item.puesto);
+
+                    if (rawCensusData.length === 0) {
+                        showToast("Error", "No se detectaron columnas de 'Cédula' o 'Puesto' válidas.", "error");
+                        return;
+                    }
+
+                    censusFileLoaded = true;
+                    document.getElementById('txtFileCensus').textContent = file.name;
+                    document.getElementById('censusInfoCard').classList.remove('hidden');
+                    document.getElementById('censusLoadedCount').textContent = `${rawCensusData.length} registros cargados`;
+
+                    showToast("Censo Cargado", `Censo de referencia con ${rawCensusData.length} registros cargado de forma local.`, "success");
+
+                } catch (error) {
+                    console.error(error);
+                    showToast("Error de Lectura", "No se pudo leer el archivo de censo.", "error");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function resetCensusFile() {
+            rawCensusData = [];
+            censusFileLoaded = false;
+            document.getElementById('fileCensus').value = "";
+            document.getElementById('txtFileCensus').textContent = "Subir Censo (Excel/CSV)";
+            document.getElementById('censusInfoCard').classList.add('hidden');
+            showToast("Censo Removido", "La base de censo ha sido liberada.", "info");
+        }
+
+        // --- ALGORITMO DETERMINISTA DE DIVISIONES ---
+        function getDeterministicLocation(cedula) {
+            let hash = 0;
+            const cleanCedula = String(cedula).replace(/[\s.-]/g, '');
+            for (let i = 0; i < cleanCedula.length; i++) {
+                hash = (hash << 5) - hash + cleanCedula.charCodeAt(i);
+                hash |= 0;
+            }
+            hash = Math.abs(hash);
+
+            const deptIndex = hash % COLOMBIAN_ELECTION_DIVISIONS.length;
+            const deptData = COLOMBIAN_ELECTION_DIVISIONS[deptIndex];
+
+            const muniIndex = (hash >> 2) % deptData.municipalities.length;
+            const muniData = deptData.municipalities[muniIndex];
+
+            const stationIndex = (hash >> 4) % muniData.stations.length;
+            const stationName = muniData.stations[stationIndex];
+
+            const mesaNum = ((hash >> 6) % 35) + 1;
+
+            return {
+                depto: deptData.dept,
+                muni: muniData.name,
+                puesto: stationName,
+                mesa: String(mesaNum)
+            };
+        }
+
+        // --- PROCESAMIENTO Y COMBINACIÓN DE DATOS ---
+        async function processData() {
+            if (rawWitnessesData.length === 0 && processedResults.length === 0) {
+                showToast("Faltan Testigos", "Por favor, sube un archivo con tus testigos o carga los datos Demo.", "error");
+                return;
+            }
+
+            const witnessesToProcess = rawWitnessesData.length > 0 ? rawWitnessesData : processedResults;
+            const newProcessedList = [];
+
+            if (currentSourceMode === "excel") {
+                witnessesToProcess.forEach(w => {
+                    const existing = processedResults.find(p => p.cedula === w.cedula);
+                    
+                    newProcessedList.push({
+                        cedula: w.cedula,
+                        nombre: w.nombreCompleto || w.nombre || "TESTIGO SIN NOMBRE",
+                        depto: w.depto || "SIN DEPARTAMENTO",
+                        muni: w.muni || "SIN MUNICIPIO",
+                        puesto: w.puesto || "SIN PUESTO ASIGNADO",
+                        mesa: w.mesa || "N/A",
+                        asistencia: existing ? existing.asistencia : "pendiente",
+                        fechaConfirmacion: existing ? existing.fechaConfirmacion : "",
+                        observaciones: existing ? existing.observaciones || "" : "",
+                        fotos: existing ? (existing.fotos || (existing.foto ? [existing.foto] : [])) : []
+                    });
+                });
+            } else if (currentSourceMode === "simulation") {
+                witnessesToProcess.forEach(w => {
+                    const loc = getDeterministicLocation(w.cedula);
+                    const existing = processedResults.find(p => p.cedula === w.cedula);
+                    
+                    newProcessedList.push({
+                        cedula: w.cedula,
+                        nombre: w.nombreCompleto || w.nombre || "TESTIGO SIN NOMBRE",
+                        depto: loc.depto,
+                        muni: loc.muni,
+                        puesto: loc.puesto,
+                        mesa: loc.mesa,
+                        asistencia: existing ? existing.asistencia : "pendiente",
+                        fechaConfirmacion: existing ? existing.fechaConfirmacion : "",
+                        observaciones: existing ? existing.observaciones || "" : "",
+                        fotos: existing ? (existing.fotos || (existing.foto ? [existing.foto] : [])) : []
+                    });
+                });
+            } else {
+                if (!censusFileLoaded || rawCensusData.length === 0) {
+                    showToast("Falta Censo", "Debes cargar un archivo de censo de Registraduría externo.", "error");
+                    return;
+                }
+
+                const censusMap = new Map();
+                rawCensusData.forEach(c => {
+                    censusMap.set(c.cedula, c);
+                });
+
+                witnessesToProcess.forEach(w => {
+                    const match = censusMap.get(w.cedula);
+                    const existing = processedResults.find(p => p.cedula === w.cedula);
+
+                    if (match) {
+                        newProcessedList.push({
+                            cedula: w.cedula,
+                            nombre: w.nombreCompleto || w.nombre || "TESTIGO SIN NOMBRE",
+                            depto: match.depto || "BOGOTÁ D.C.",
+                            muni: match.muni || "BOGOTÁ D.C.",
+                            puesto: match.puesto,
+                            mesa: match.mesa || "Mesa 1",
+                            asistencia: existing ? existing.asistencia : "pendiente",
+                            fechaConfirmacion: existing ? existing.fechaConfirmacion : "",
+                            observaciones: existing ? existing.observaciones || "" : "",
+                        fotos: existing ? (existing.fotos || (existing.foto ? [existing.foto] : [])) : []
+                        });
+                    } else {
+                        newProcessedList.push({
+                            cedula: w.cedula,
+                            nombre: w.nombreCompleto || w.nombre || "TESTIGO SIN NOMBRE",
+                            depto: "SIN UBICACIÓN",
+                            muni: "SIN UBICACIÓN",
+                            puesto: "NO ENCONTRADO EN EL CENSO",
+                            mesa: "N/A",
+                            asistencia: existing ? existing.asistencia : "pendiente",
+                            fechaConfirmacion: existing ? existing.fechaConfirmacion : "",
+                            observaciones: existing ? existing.observaciones || "" : "",
+                        fotos: existing ? (existing.fotos || (existing.foto ? [existing.foto] : [])) : []
+                        });
+                    }
+                });
+            }
+
+            await saveBatchWitnessesToCloud(newProcessedList);
+            rawWitnessesData = [];
+            
+            initializeDropdowns();
+            applyFilters();
+            updateMetrics();
+            updateCharts();
+            
+            document.getElementById('txtLastUpdate').textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
+        }
+
+        async function markWitnessAttendance(cedula, status) {
+            const witnessIndex = processedResults.findIndex(w => w.cedula === cedula);
+            if (witnessIndex === -1) return;
+
+            const selectedDate = document.getElementById('controlDateInput').value;
+
+            processedResults[witnessIndex].asistencia = status;
+            processedResults[witnessIndex].fechaConfirmacion = status === 'pendiente' ? "" : selectedDate;
+
+            await saveWitnessToCloud(processedResults[witnessIndex]);
+
+            applyFilters();
+            updateMetrics();
+            updateCharts();
+        }
+
+        async function setAllAttendance(status) {
+            if (filteredResults.length === 0) return;
+            
+            const selectedDate = document.getElementById('controlDateInput').value;
+            const updatedWitnesses = [];
+
+            filteredResults.forEach(w => {
+                const idx = processedResults.findIndex(p => p.cedula === w.cedula);
+                if (idx !== -1) {
+                    processedResults[idx].asistencia = status;
+                    processedResults[idx].fechaConfirmacion = status === 'pendiente' ? "" : selectedDate;
+                    updatedWitnesses.push(processedResults[idx]);
+                }
+            });
+
+            await saveBatchWitnessesToCloud(processedResults);
+            
+            applyFilters();
+            updateMetrics();
+            updateCharts();
+            
+            showToast("Acción Masiva", `Marcados ${updatedWitnesses.length} testigos como ${status === 'asistio' ? 'Asistió' : 'Pendiente'}.`, "success");
+        }
+
+        // --- FILTROS Y DROPDOWNS ---
+        function initializeDropdowns() {
+            const filterDept = document.getElementById('filterDept');
+            const filterStation = document.getElementById('filterStation');
+            const filterDateControl = document.getElementById('filterDateControl');
+
+            const depts = new Set();
+            const stations = new Set();
+            const dates = new Set();
+
+            processedResults.forEach(item => {
+                if (item.depto) depts.add(item.depto);
+                if (item.puesto) stations.add(item.puesto);
+                if (item.fechaConfirmacion) dates.add(item.fechaConfirmacion);
+            });
+
+            buildSelectOptions(filterDept, Array.from(depts).sort(), "Todos los Deptos.");
+            buildSelectOptions(filterStation, Array.from(stations).sort(), "Todos los Puestos");
+            buildSelectOptions(filterDateControl, Array.from(dates).sort(), "Cualquier Fecha");
+        }
+
+        function buildSelectOptions(selectElement, arrayData, defaultText) {
+            const currentValue = selectElement.value;
+            selectElement.innerHTML = `<option value="">${defaultText}</option>`;
+            arrayData.forEach(val => {
+                if (val) {
+                    const option = document.createElement('option');
+                    option.value = val;
+                    option.textContent = val;
+                    selectElement.appendChild(option);
+                }
+            });
+            if (arrayData.includes(currentValue)) {
+                selectElement.value = currentValue;
+            }
+        }
+
+        function applyFilters() {
+            const query = document.getElementById('searchQuery').value.toLowerCase().trim();
+            const attendance = document.getElementById('filterAttendance').value;
+            const dateControl = document.getElementById('filterDateControl').value;
+            const dept = document.getElementById('filterDept').value;
+            const station = document.getElementById('filterStation').value;
+
+            filteredResults = processedResults.filter(item => {
+                const matchQuery = !query || 
+                                   item.cedula.includes(query) || 
+                                   item.nombre.toLowerCase().includes(query) ||
+                                   (item.puesto && item.puesto.toLowerCase().includes(query));
+                
+                const matchAttendance = !attendance || item.asistencia === attendance;
+                const matchDate = !dateControl || item.fechaConfirmacion === dateControl;
+                const matchDept = !dept || item.depto === dept;
+                const matchStation = !station || item.puesto === station;
+
+                return matchQuery && matchAttendance && matchDate && matchDept && matchStation;
+            });
+
+            currentPage = 1;
+            renderTable();
+        }
+
+        // --- RENDERIZADO DE TABLA ---
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = "";
+
+            if (filteredResults.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="py-12 text-center text-slate-400">
+                            <i class="fa-solid fa-folder-open text-3xl mb-2 block"></i>
+                            <p class="text-xs font-semibold">Ningún testigo coincide con los filtros aplicados</p>
+                            <p class="text-[10px]">Prueba modificando las opciones de búsqueda.</p>
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('tableSummary').textContent = "Mostrando 0 de 0 registros";
+                document.getElementById('currentPageIndicator').textContent = "Página 1 de 1";
+                document.getElementById('btnPrevPage').disabled = true;
+                document.getElementById('btnNextPage').disabled = true;
+                return;
+            }
+
+            const totalRecords = filteredResults.length;
+            const totalPages = Math.ceil(totalRecords / rowsPerPage);
+            
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = Math.min(startIndex + rowsPerPage, totalRecords);
+            const pageData = filteredResults.slice(startIndex, endIndex);
+
+            pageData.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/50 transition";
+                
+                let btnAsistio = `<button onclick="markWitnessAttendance('${item.cedula}', 'asistio')" class="px-2.5 py-1 rounded-l-lg border text-[10px] font-bold ${item.asistencia === 'asistio' ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'} transition">SÍ</button>`;
+                let btnNoAsistio = `<button onclick="markWitnessAttendance('${item.cedula}', 'no_asistio')" class="px-2.5 py-1 border-t border-b text-[10px] font-bold ${item.asistencia === 'no_asistio' ? 'bg-rose-600 border-rose-600 text-white' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'} transition">NO</button>`;
+                let btnPendiente = `<button onclick="markWitnessAttendance('${item.cedula}', 'pendiente')" class="px-2.5 py-1 rounded-r-lg border text-[10px] font-bold ${item.asistencia === 'pendiente' ? 'bg-amber-500 border-amber-500 text-slate-950' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'} transition">PND</button>`;
+
+                const actionControls = `<div class="flex items-center justify-center">${btnAsistio}${btnNoAsistio}${btnPendiente}</div>`;
+                const dateStamp = item.fechaConfirmacion ? `<span class="bg-indigo-50 text-indigo-800 font-mono text-[10px] px-2 py-0.5 rounded font-bold">${item.fechaConfirmacion}</span>` : `<span class="text-slate-400 italic">No registrado</span>`;
+
+                let photoCell = '';
+                const fotos = item.fotos || (item.foto ? [item.foto] : []);
+                
+                if (fotos.length > 0) {
+                    let imgs = fotos.map((foto, index) => `
+                        <div class="relative group w-8 h-8 shrink-0">
+                            <img src="${foto}" class="w-8 h-8 rounded-full object-cover border border-slate-200 cursor-pointer" onclick="triggerPhotoUpload('${item.cedula}')" title="Clic para adjuntar más fotos">
+                            <button onclick="event.stopPropagation(); removeWitnessPhoto('${item.cedula}', ${index})" class="absolute -top-1 -right-1 bg-rose-500 hover:bg-rose-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[9px] opacity-0 group-hover:opacity-100 transition z-10" title="Quitar foto">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); downloadWitnessPhoto('${item.cedula}', ${index})" class="absolute -bottom-1 -right-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full w-4 h-4 flex items-center justify-center text-[9px] opacity-0 group-hover:opacity-100 transition z-10" title="Descargar foto">
+                                <i class="fa-solid fa-download"></i>
+                            </button>
+                        </div>
+                    `).join('');
+                    
+                    let addBtn = fotos.length < 4 ? `
+                        <button onclick="triggerPhotoUpload('${item.cedula}')" class="w-8 h-8 shrink-0 rounded-full border border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 flex items-center justify-center text-slate-400 hover:text-indigo-500 transition" title="Adjuntar otra foto (${fotos.length}/4)">
+                            <i class="fa-solid fa-plus text-[10px]"></i>
+                        </button>
+                    ` : '';
+
+                    photoCell = `<div class="flex flex-wrap items-center justify-center gap-1 mx-auto max-w-[80px]">${imgs}${addBtn}</div>`;
+                } else {
+                    photoCell = `<button onclick="triggerPhotoUpload('${item.cedula}')" class="w-10 h-10 mx-auto rounded-full border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 flex items-center justify-center text-slate-400 hover:text-indigo-500 transition" title="Adjuntar foto (Hasta 4)">
+                            <i class="fa-solid fa-camera text-xs"></i>
+                       </button>`;
+                }
+
+                tr.innerHTML = `
+                    <td class="py-3 px-6 text-center">${photoCell}</td>
+                    <td class="py-3 px-6 font-mono font-bold text-slate-800">${formatCedula(item.cedula)}</td>
+                    <td class="py-3 px-6 font-semibold text-slate-900">${item.nombre}</td>
+                    <td class="py-3 px-6 text-slate-600">${item.depto} <span class="text-[9px] text-slate-400 block">${item.muni}</span></td>
+                    <td class="py-3 px-6 text-[11px] text-slate-500 font-medium">${item.puesto}</td>
+                    <td class="py-3 px-6 text-center font-black text-slate-900">${item.mesa}</td>
+                    <td class="py-3 px-6 text-center">${dateStamp}</td>
+                    <td class="py-3 px-6 text-center">${actionControls}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('tableSummary').textContent = `Mostrando ${startIndex + 1} a ${endIndex} de ${totalRecords} registros`;
+            document.getElementById('currentPageIndicator').textContent = `Página ${currentPage} de ${totalPages}`;
+            document.getElementById('btnPrevPage').disabled = currentPage === 1;
+            document.getElementById('btnNextPage').disabled = currentPage === totalPages;
+        }
+
+        function changePage(direction) {
+            currentPage += direction;
+            renderTable();
+        }
+
+        function formatCedula(num) {
+            return Number(num).toLocaleString('es-CO');
+        }
+
+        // --- GESTIÓN DE FOTOS DE TESTIGOS ---
+        let pendingPhotoCedula = null;
+
+        function triggerPhotoUpload(cedula) {
+            pendingPhotoCedula = cedula;
+            const input = document.getElementById('photoFileInput');
+            input.value = "";
+            input.click();
+        }
+
+        async function handlePhotoFileSelected(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0 || !pendingPhotoCedula) return;
+
+            const idx = processedResults.findIndex(item => item.cedula === pendingPhotoCedula);
+            if (idx === -1) {
+                pendingPhotoCedula = null;
+                return;
+            }
+
+            const item = processedResults[idx];
+            if (!item.fotos) item.fotos = item.foto ? [item.foto] : [];
+            
+            const remainingSlots = 4 - item.fotos.length;
+            if (remainingSlots <= 0) {
+                showToast("Límite Alcanzado", "Ya se han adjuntado 4 fotos para este testigo.", "error");
+                pendingPhotoCedula = null;
+                return;
+            }
+
+            const filesToProcess = Array.from(files).slice(0, remainingSlots);
+            let addedCount = 0;
+
+            for (const file of filesToProcess) {
+                if (!file.type.startsWith('image/')) continue;
+                
+                try {
+                    const dataUrl = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const img = new Image();
+                            img.onload = function() {
+                                resolve(compressImageAdaptive(img));
+                            };
+                            img.onerror = reject;
+                            img.src = e.target.result;
+                        };
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                    });
+                    item.fotos.push(dataUrl);
+                    addedCount++;
+                } catch (e) {
+                    console.error("Error al procesar foto:", e);
+                }
+            }
+
+            if (addedCount > 0) {
+                if (item.foto) delete item.foto; // Clean up old property
+                saveWitnessToCloud(item);
+                renderTable();
+                showToast("Fotos Adjuntadas", `Se agregaron ${addedCount} foto(s) correctamente.`, "success");
+            } else {
+                showToast("Error de Imagen", "No se pudo procesar ninguna imagen válida.", "error");
+            }
+            
+            pendingPhotoCedula = null;
+        }
+
+        // Comprime manteniendo la mejor calidad posible, reduciendo solo lo necesario
+        // para que la foto no supere el límite de tamaño por documento en la nube.
+        function compressImageAdaptive(img) {
+            const maxSizeBytes = 700 * 1024; // margen seguro bajo el límite de 1MB por documento en Firestore
+            let maxDim = 1280;
+            let quality = 0.9;
+            let dataUrl = "";
+
+            for (let attempt = 0; attempt < 8; attempt++) {
+                let w = img.width, h = img.height;
+                if (w >= h && w > maxDim) {
+                    h = Math.round(h * (maxDim / w));
+                    w = maxDim;
+                } else if (h > maxDim) {
+                    w = Math.round(w * (maxDim / h));
+                    h = maxDim;
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(img, 0, 0, w, h);
+
+                dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+                const approxBytes = dataUrl.length * 0.75; // tamaño binario aproximado del base64
+                if (approxBytes <= maxSizeBytes) break;
+
+                // Si sigue muy pesada, primero baja un poco la calidad y luego la resolución
+                if (quality > 0.6) {
+                    quality -= 0.1;
+                } else {
+                    maxDim = Math.round(maxDim * 0.8);
+                }
+            }
+            return dataUrl;
+        }
+
+        function removeWitnessPhoto(cedula, index) {
+            const idx = processedResults.findIndex(item => item.cedula === cedula);
+            if (idx !== -1) {
+                if (processedResults[idx].fotos && processedResults[idx].fotos.length > index) {
+                    processedResults[idx].fotos.splice(index, 1);
+                    saveWitnessToCloud(processedResults[idx]);
+                    renderTable();
+                    showToast("Foto Eliminada", "Se quitó una foto del testigo.", "info");
+                }
+            }
+        }
+
+        function downloadWitnessPhoto(cedula, index) {
+            const item = processedResults.find(w => w.cedula === cedula);
+            if (!item || !item.fotos || item.fotos.length <= index) {
+                showToast("Sin Foto", "Este testigo no tiene la foto especificada.", "error");
+                return;
+            }
+
+            const foto = item.fotos[index];
+            const nombreLimpio = (item.nombre || "testigo").trim().replace(/[^a-zA-Z0-9]+/g, "_");
+            const link = document.createElement('a');
+            link.href = foto;
+            link.download = `Foto_${nombreLimpio}_${cedula}_${index + 1}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast("Descarga Iniciada", `Se descargó la foto ${index + 1} del testigo.`, "success");
+        }
+
+        // --- EXPORTAR REPORTE A PDF (CON FOTOS) ---
+        function exportToPDF() {
+            if (processedResults.length === 0) {
+                showToast("Acción Inválida", "No hay datos para exportar.", "error");
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+            doc.setFontSize(14);
+            doc.setTextColor(15, 23, 42);
+            doc.text("Planilla de Control de Testigos Electorales - Segunda Vuelta", 14, 12);
+            doc.setFontSize(9);
+            doc.setTextColor(100, 116, 139);
+            doc.text(`Generado: ${new Date().toLocaleString('es-CO')}   |   Total de testigos: ${processedResults.length}`, 14, 17);
+
+            const head = [["Foto", "Cédula", "Nombre del Testigo", "Depto. / Municipio", "Puesto de Votación", "Mesa", "Asistencia", "Fecha"]];
+            const body = processedResults.map(item => [
+                "",
+                formatCedula(item.cedula),
+                item.nombre,
+                `${item.depto || ''}\n${item.muni || ''}`,
+                item.puesto || '',
+                item.mesa || '',
+                item.asistencia === 'asistio' ? 'SÍ ASISTIÓ' : (item.asistencia === 'no_asistio' ? 'NO ASISTIÓ' : 'PENDIENTE'),
+                item.fechaConfirmacion || '—'
+            ]);
+
+            doc.autoTable({
+                head: head,
+                body: body,
+                startY: 22,
+                styles: { fontSize: 8, cellPadding: 2, valign: 'middle' },
+                headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold', halign: 'center' },
+                columnStyles: {
+                    0: { cellWidth: 18, minCellHeight: 18, halign: 'center' },
+                    5: { halign: 'center' },
+                    6: { halign: 'center' }
+                },
+                didParseCell: function(data) {
+                    // La celda de foto no debe llevar texto, solo la imagen dibujada encima
+                    if (data.column.index === 0 && data.section === 'body') {
+                        data.cell.text = [];
+                    }
+                },
+                didDrawCell: function(data) {
+                    if (data.column.index !== 0 || data.section !== 'body') return;
+                    const item = processedResults[data.row.index];
+                    const fotos = item ? (item.fotos || (item.foto ? [item.foto] : [])) : [];
+                    if (fotos.length > 0) {
+                        try {
+                            const cellPad = 1.5;
+                            const availW = data.cell.width - (cellPad * 2);
+                            const availH = data.cell.height - (cellPad * 2);
+                            
+                            if (fotos.length === 1) {
+                                const size = Math.min(availW, availH);
+                                const x = data.cell.x + (data.cell.width - size) / 2;
+                                const y = data.cell.y + (data.cell.height - size) / 2;
+                                doc.addImage(fotos[0], 'JPEG', x, y, size, size);
+                            } else {
+                                const gap = 1;
+                                const size = Math.min((availW - gap) / 2, (availH - gap) / 2);
+                                const startX = data.cell.x + (data.cell.width - (size * 2 + gap)) / 2;
+                                const startY = data.cell.y + (data.cell.height - (size * 2 + gap)) / 2;
+                                
+                                fotos.forEach((foto, i) => {
+                                    if (i >= 4) return;
+                                    const col = i % 2;
+                                    const row = Math.floor(i / 2);
+                                    const x = startX + col * (size + gap);
+                                    const y = startY + row * (size + gap);
+                                    doc.addImage(foto, 'JPEG', x, y, size, size);
+                                });
+                            }
+                        } catch (e) {
+                            console.warn("No se pudo insertar la foto en el PDF:", e);
+                        }
+                    } else {
+                        doc.setFontSize(6.5);
+                        doc.setTextColor(180, 180, 180);
+                        doc.text("Sin foto", data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, { align: 'center', baseline: 'middle' });
+                    }
+                },
+                rowPageBreak: 'avoid',
+                margin: { top: 22, left: 8, right: 8 }
+            });
+
+            doc.save(`Reporte_Testigos_SegundaVuelta_${new Date().toISOString().slice(0,10)}.pdf`);
+            showToast("PDF Generado", "Se descargó tu reporte en PDF con las fotos de los testigos incluidas.", "success");
+        }
+
+        // --- MÉTRICAS Y GRÁFICOS INTERACTIVOS ---
+        function updateMetrics() {
+            const total = processedResults.length;
+            const attended = processedResults.filter(w => w.asistencia === 'asistio').length;
+            const absent = processedResults.filter(w => w.asistencia === 'no_asistio').length;
+            const pending = processedResults.filter(w => w.asistencia === 'pendiente').length;
+
+            document.getElementById('metricTotalWitnesses').textContent = total;
+            document.getElementById('metricAttended').textContent = attended;
+            document.getElementById('metricAbsent').textContent = absent;
+            document.getElementById('metricPending').textContent = pending;
+        }
+
+        function updateCharts() {
+            if (chartDeptsInstance) chartDeptsInstance.destroy();
+            if (chartAttendanceInstance) chartAttendanceInstance.destroy();
+
+            if (processedResults.length === 0) {
+                document.getElementById('chartDeptsPlaceholder').classList.remove('hidden');
+                document.getElementById('chartAttendancePlaceholder').classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('chartDeptsPlaceholder').classList.add('hidden');
+            document.getElementById('chartAttendancePlaceholder').classList.add('hidden');
+
+            const attended = processedResults.filter(w => w.asistencia === 'asistio').length;
+            const absent = processedResults.filter(w => w.asistencia === 'no_asistio').length;
+            const pending = processedResults.filter(w => w.asistencia === 'pendiente').length;
+
+            const ctxAttendance = document.getElementById('chartAttendance').getContext('2d');
+            chartAttendanceInstance = new Chart(ctxAttendance, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Asistió', 'No Asistió', 'Pendiente'],
+                    datasets: [{
+                        data: [attended, absent, pending],
+                        backgroundColor: ['#10b981', '#f43f5e', '#f59e0b'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9, weight: 'bold' } } }
+                    }
+                }
+            });
+
+            const deptCounts = {};
+            processedResults.forEach(r => {
+                if (r.depto) deptCounts[r.depto] = (deptCounts[r.depto] || 0) + 1;
+            });
+
+            const ctxDepts = document.getElementById('chartDepts').getContext('2d');
+            chartDeptsInstance = new Chart(ctxDepts, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(deptCounts),
+                    datasets: [{
+                        label: 'Testigos',
+                        data: Object.values(deptCounts),
+                        backgroundColor: '#4f46e5',
+                        borderRadius: 6,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 } } },
+                        x: { grid: { display: false }, ticks: { font: { size: 8 } } }
+                    }
+                }
+            });
+        }
+
+        // --- EXPORTAR REPORTES A EXCEL ---
+        function exportToExcel() {
+            if (processedResults.length === 0) {
+                showToast("Acción Inválida", "No hay datos para exportar.", "error");
+                return;
+            }
+
+            const exportData = processedResults.map(item => ({
+                'Cédula': item.cedula,
+                'Nombre del Testigo': item.nombre,
+                'Departamento': item.depto,
+                'Municipio': item.muni,
+                'Puesto de Votación': item.puesto,
+                'Mesa de Votación': item.mesa,
+                'Asistencia': item.asistencia === 'asistio' ? 'SÍ (Asistió)' : (item.asistencia === 'no_asistio' ? 'NO (Faltó)' : 'PENDIENTE'),
+                'Fecha de Control': item.fechaConfirmacion || 'No Registrada'
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Planilla General de Control");
+
+            const maxLen = exportData.reduce((acc, row) => {
+                Object.keys(row).forEach((key, i) => {
+                    const valueLen = String(row[key]).length;
+                    acc[i] = Math.max(acc[i] || 10, valueLen, key.length);
+                });
+                return acc;
+            }, []);
+            worksheet['!cols'] = maxLen.map(len => ({ wch: len + 3 }));
+
+            XLSX.writeFile(workbook, `Planilla_Control_Asistencia_SegundaVuelta.xlsx`);
+            showToast("Reporte Generado", "Se descargó tu planilla Excel con el estado de asistencia actualizado.", "success");
+        }
+
+        // --- CARGAR DEMO (SIMULACIÓN DE CAMPAÑA COLOMBIANA) ---
+        async function loadDemoData() {
+            const demoWitnesses = [
+                { cedula: "1012345678", nombreCompleto: "Alejandra Gómez Restrepo", depto: "ANTIOQUIA", muni: "MEDELLÍN", puesto: "PLAZA MAYOR EXPOSICIONES", mesa: "4", asistencia: "asistio", fechaConfirmacion: "2026-06-19" },
+                { cedula: "79876543", nombreCompleto: "Carlos Julio Espinosa Rojas", depto: "BOGOTÁ D.C.", muni: "BOGOTÁ D.C.", puesto: "CORFERIAS - PUESTO CENSO", mesa: "12", asistencia: "pendiente", fechaConfirmacion: "" },
+                { cedula: "1045678912", nombreCompleto: "Diana María Bolaños Torres", depto: "VALLE DEL CAUCA", muni: "CALI", puesto: "COLISEO DEL PUEBLO", mesa: "8", asistencia: "no_asistio", fechaConfirmacion: "2026-06-19" },
+                { cedula: "1143890123", nombreCompleto: "Enrique Rafael Obregón Polo", depto: "ATLÁNTICO", muni: "BARRANQUILLA", puesto: "ESTADIO METROPOLITANO", mesa: "15", asistencia: "asistio", fechaConfirmacion: "2026-06-19" },
+                { cedula: "43210987", nombreCompleto: "Gloria Stella Uribe Vélez", depto: "ANTIOQUIA", muni: "ENVIGADO", puesto: "COLEGIO DE ENVIGADO", mesa: "1", asistencia: "asistio", fechaConfirmacion: "2026-06-19" },
+                { cedula: "1085234567", nombreCompleto: "Hernando De Jesús Rosero", depto: "NARIÑO", muni: "PASTO", puesto: "COLEGIO CIUDAD DE PASTO", mesa: "11", asistencia: "pendiente", fechaConfirmacion: "" },
+                { cedula: "1001234890", nombreCompleto: "Isabella Martínez Cuello", depto: "MAGDALENA", muni: "SANTA MARTA", puesto: "UNIVERSIDAD DEL MAGDALENA", mesa: "2", asistencia: "asistio", fechaConfirmacion: "2026-06-19" },
+                { cedula: "12345678", nombreCompleto: "Jorge Eliecer Gaitán", depto: "BOGOTÁ D.C.", muni: "BOGOTÁ D.C.", puesto: "PLAZA DE BOLIVAR", mesa: "1", asistencia: "asistio", fechaConfirmacion: "2026-06-19" },
+                { cedula: "1019087654", nombreCompleto: "Karla Vanessa Pinzón S.", depto: "SANTANDER", muni: "BUCARAMANGA", puesto: "UNIVERSIDAD INDUSTRIAL DE SANTANDER", mesa: "20", asistencia: "no_asistio", fechaConfirmacion: "2026-06-19" },
+                { cedula: "80998776", nombreCompleto: "Luis Fernando Chinchilla", depto: "MAGDALENA", muni: "ARACATACA", puesto: "COLEGIO GABRIEL GARCIA MARQUEZ", mesa: "3", asistencia: "pendiente", fechaConfirmacion: "" },
+                { cedula: "1128456789", nombreCompleto: "Mónica Patricia Jaramillo", depto: "ANTIOQUIA", muni: "BELLO", puesto: "POLIDEPORTIVO TULIO OSPINA", mesa: "14", asistencia: "asistio", fechaConfirmacion: "2026-06-19" },
+                { cedula: "52456789", nombreCompleto: "Olga Lucía Samper", depto: "BOGOTÁ D.C.", muni: "BOGOTÁ D.C.", puesto: "COLEGIO CLARETIANO SUBA", mesa: "9", asistencia: "asistio", fechaConfirmacion: "2026-06-19" }
+            ];
+
+            await saveBatchWitnessesToCloud(demoWitnesses);
+            showToast("Demo Activo", "Hemos cargado 12 testigos con sus ubicaciones geográficas exactas de votación en Colombia.", "info");
+        }
+    </script>
+</body>
+</html>
